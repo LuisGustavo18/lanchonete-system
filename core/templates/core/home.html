@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Lanchonete System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+
+        .pedido {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Lanchonete System</h1>
+
+    <p>Painel de pedidos</p>
+
+    <form method="post" action="/accounts/logout/">
+    {% csrf_token %}
+    <button type="submit">Sair</button>
+</form>
+
+    <p>Quantidade de pedidos: {{ orders|length }}</p>
+
+
+    {% for order in orders %}
+
+        <div class="pedido">
+
+            <h2>Pedido #{{ order.id }}</h2>
+
+            <p>Cliente: {{ order.customer.name }}</p>
+
+            <p>Status: {{ order.get_status_display }}</p>
+
+            <p>Tipo: {{ order.get_order_type_display }}</p>
+
+
+            <h3>Itens</h3>
+
+            {% for item in order.orderitem_set.all %}
+
+                <p>
+                    {{ item.quantity }}x {{ item.product.name }}
+                    — R$ {{ item.unit_price }}
+                </p>
+
+            {% endfor %}
+
+
+            <p>
+                <strong>Total: R$ {{ order.total_amount }}</strong>
+            </p>
+
+            <h3>Histórico do pedido</h3>
+
+{% for history in order.orderstatushistory_set.all %}
+
+    <p>
+        {{ history.get_status_display }}
+        — {{ history.created_at|date:"d/m/Y H:i" }}
+    </p>
+
+{% empty %}
+
+    <p>Nenhum histórico registrado.</p>
+
+{% endfor %}
+
+   {% if order.status == "NOVO" %}
+
+    <form method="post" action="/pedido/{{ order.id }}/aceitar/">
+    {% csrf_token %}
+    <button type="submit">Aceitar pedido</button>
+</form>
+
+{% elif order.status == "ACEITO" %}
+
+    <form method="post" action="/pedido/{{ order.id }}/preparar/">
+    {% csrf_token %}
+    <button type="submit">Iniciar preparo</button>
+</form>
+
+{% elif order.status == "EM_PREPARO" %}
+
+    <a href="/pedido/{{ order.id }}/pronto/">
+        Marcar como pronto
+    </a>
+
+{% elif order.status == "PRONTO" %}
+
+    <a href="/pedido/{{ order.id }}/entrega/">
+        Saiu para entrega
+    </a>
+
+{% elif order.status == "SAIU_PARA_ENTREGA" %}
+
+    <a href="/pedido/{{ order.id }}/entregue/">
+        Marcar como entregue
+    </a>
+
+{% endif %}
+
+        </div>
+
+        <hr>
+
+    {% endfor %}
+
+</body>
+
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login - Lanchonete System</title>
+</head>
+
+<body>
+
+    <h1>Login</h1>
+
+    <form method="post">
+
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">Entrar</button>
+
+    </form>
+
+</body>
+
+</html>
