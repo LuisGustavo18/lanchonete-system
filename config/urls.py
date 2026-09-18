@@ -16,8 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from core.views import home, accept_order, start_preparing, mark_ready, out_for_delivery, mark_delivered
-
+from core.views import home, accept_order, start_preparing, mark_ready, out_for_delivery, mark_delivered, manage_products
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -29,4 +28,5 @@ urlpatterns = [
     path("pedido/<int:order_id>/entregue/", mark_delivered),
     path("__debug__/", include("debug_toolbar.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
+    path("produtos/gerenciar/", manage_products),
 ]

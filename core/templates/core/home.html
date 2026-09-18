@@ -63,61 +63,61 @@
                 <strong>Total: R$ {{ order.total_amount }}</strong>
             </p>
 
-            <h3>Histórico do pedido</h3>
+<h3>Histórico do pedido</h3>
 
 {% for history in order.orderstatushistory_set.all %}
-
     <p>
-        {{ history.get_status_display }}
-        — {{ history.created_at|date:"d/m/Y H:i" }}
+        {{ history.get_status_display }} —
+        {{ history.created_at|date:"d/m/Y H:i" }}
+        — Alterado por: {{ history.changed_by }}
     </p>
-
 {% empty %}
-
     <p>Nenhum histórico registrado.</p>
-
 {% endfor %}
 
-   {% if order.status == "NOVO" %}
+
+{% if order.status == "NOVO" %}
 
     <form method="post" action="/pedido/{{ order.id }}/aceitar/">
-    {% csrf_token %}
-    <button type="submit">Aceitar pedido</button>
-</form>
+        {% csrf_token %}
+        <button type="submit">Aceitar pedido</button>
+    </form>
 
 {% elif order.status == "ACEITO" %}
 
     <form method="post" action="/pedido/{{ order.id }}/preparar/">
-    {% csrf_token %}
-    <button type="submit">Iniciar preparo</button>
-</form>
+        {% csrf_token %}
+        <button type="submit">Iniciar preparo</button>
+    </form>
 
 {% elif order.status == "EM_PREPARO" %}
 
-    <a href="/pedido/{{ order.id }}/pronto/">
-        Marcar como pronto
-    </a>
+    <form method="post" action="/pedido/{{ order.id }}/pronto/">
+        {% csrf_token %}
+        <button type="submit">Marcar como pronto</button>
+    </form>
 
 {% elif order.status == "PRONTO" %}
 
-    <a href="/pedido/{{ order.id }}/entrega/">
-        Saiu para entrega
-    </a>
+    <form method="post" action="/pedido/{{ order.id }}/entrega/">
+        {% csrf_token %}
+        <button type="submit">Saiu para entrega</button>
+    </form>
 
 {% elif order.status == "SAIU_PARA_ENTREGA" %}
 
-    <a href="/pedido/{{ order.id }}/entregue/">
-        Marcar como entregue
-    </a>
+    <form method="post" action="/pedido/{{ order.id }}/entregue/">
+        {% csrf_token %}
+        <button type="submit">Marcar como entregue</button>
+    </form>
 
 {% endif %}
 
-        </div>
+</div>
 
-        <hr>
+<hr>
 
-    {% endfor %}
-
+{% endfor %}
 </body>
 
 </html>
