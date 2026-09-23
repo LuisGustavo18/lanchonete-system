@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Produtos</title>
+</head>
+<body>
+
+    <h1>Produtos</h1>
+
+    <a href="/produtos/novo/">Novo produto</a>
+    <br><br>
+
+    <a href="/">Voltar</a>
+
+    <hr>
+
+    {% for product in products %}
+
+        <h2>{{ product.name }}</h2>
+
+        <p>Categoria: {{ product.category.name }}</p>
+        <p>Preço: R$ {{ product.price }}</p>
+
+        {% if product.description %}
+            <p>{{ product.description }}</p>
+        {% endif %}
+
+{% if product.is_active %}
+    <p>Ativo</p>
+
+    <form method="post" action="/produtos/{{ product.id }}/inativar/">
+        {% csrf_token %}
+        <button type="submit">Inativar</button>
+    </form>
+{% else %}
+    <p>Inativo</p>
+
+    <form method="post" action="/produtos/{{ product.id }}/ativar/">
+        {% csrf_token %}
+        <button type="submit">Ativar</button>
+    </form>
+{% endif %}
+
+<a href="/produtos/{{ product.id }}/editar/">Editar</a>
+
+<form method="post" action="/produtos/{{ product.id }}/inativar/">
+    {% csrf_token %}
+    <button type="submit">Inativar</button>
+</form>
+
+<hr>
+
+    {% empty %}
+
+        <p>Nenhum produto cadastrado.</p>
+
+    {% endfor %}
+
+</body>
+</html>

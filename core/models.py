@@ -1,5 +1,7 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
+
 
 
 class Business(models.Model):
@@ -124,6 +126,11 @@ class Order(models.Model):
         OUT_FOR_DELIVERY = "SAIU_PARA_ENTREGA", "Saiu para entrega"
         DELIVERED = "ENTREGUE", "Entregue"
 
+    confirmation_token = models.UUIDField(
+    default=uuid.uuid4,
+    unique=True,
+    editable=False
+)
     class OrderType(models.TextChoices):
         DELIVERY = "DELIVERY", "Entrega"
         PICKUP = "PICKUP", "Retirada"

@@ -1,7 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
-from .models import Order, OrderItem, OrderStatusHistory, Membership
+from .models import (
+    Order,
+    OrderItem,
+    OrderStatusHistory,
+    Membership,
+    Product,
+)
 
 
 def has_role(membership, *roles):
@@ -20,6 +26,154 @@ def manage_products(request):
         return redirect("/")
 
     return render(request, "core/manage_products.html")
+
+@login_required
+def product_list(request):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    products = Product.objects.filter(
+        business=membership.business
+    ).select_related("category")
+
+    return render(
+        request,
+        "core/product_list.html",
+        {"products": products}
+    )
+
+@login_required
+def product_create(request):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        price = request.POST.get("price")
+        category_id = request.POST.get("category")
+
+        Product.objects.create(
+            business=membership.business,
+            category_id=category_id,
+            name=name,
+            description=description,
+            price=price,
+        )
+
+        return redirect("/produtos/")
+
+    categories = membership.business.category_set.filter(
+        is_active=True
+    )
+
+    return render(
+        request,
+        "core/product_create.html",
+        {"categories": categories}
+    )
+
+
+@login_required
+def product_update(request, product_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    product = get_object_or_404(
+        Product,
+        id=product_id,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        product.name = request.POST.get("name")
+        product.description = request.POST.get("description")
+
+        price = request.POST.get("price").replace(",", ".")
+        product.price = price
+
+        product.category_id = request.POST.get("category")
+
+        product.save()
+
+        return redirect("/produtos/")
+
+    categories = membership.business.category_set.filter(
+        is_active=True
+    )
+
+    return render(
+        request,
+        "core/product_update.html",
+        {
+            "product": product,
+            "categories": categories,
+        }
+    )
+
+@login_required
+def product_deactivate(request, product_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    product = get_object_or_404(
+        Product,
+        id=product_id,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        product.is_active = False
+        product.save()
+
+    return redirect("/produtos/")
+
+@login_required
+def product_activate(request, product_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    product = get_object_or_404(
+        Product,
+        id=product_id,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        product.is_active = True
+        product.save()
+
+    return redirect("/produtos/")
 
 
 @login_required
@@ -40,7 +194,32 @@ def home(request):
         "orderstatushistory_set"
     )
 
-    return render(request, "core/home.html", {"orders": orders})
+    new_orders = orders.filter(status="NOVO")
+
+    accepted_orders = orders.filter(status="ACEITO")
+
+    preparing_orders = orders.filter(status="EM_PREPARO")
+
+    ready_orders = orders.filter(status="PRONTO")
+
+    out_for_delivery_orders = orders.filter(
+        status="SAIU_PARA_ENTREGA"
+    )
+
+    delivered_orders = orders.filter(status="ENTREGUE")
+
+    return render(
+        request,
+        "core/home.html",
+        {
+            "new_orders": new_orders,
+            "accepted_orders": accepted_orders,
+            "preparing_orders": preparing_orders,
+            "ready_orders": ready_orders,
+            "out_for_delivery_orders": out_for_delivery_orders,
+            "delivered_orders": delivered_orders,
+        }
+    )
 
 
 @login_required
@@ -186,3 +365,16 @@ def mark_delivered(request, order_id):
     )
 
     return redirect("/")
+
+
+    def confirm_delivery(request, token):
+    order = get_object_or_404(
+        Order,
+        confirmation_token=token
+    )
+
+    return render(
+        request,
+        "core/confirm_delivery.html",
+        {"order": order}
+    )

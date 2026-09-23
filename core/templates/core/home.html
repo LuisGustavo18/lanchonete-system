@@ -27,14 +27,18 @@
     <p>Painel de pedidos</p>
 
     <form method="post" action="/accounts/logout/">
-    {% csrf_token %}
-    <button type="submit">Sair</button>
-</form>
-
-    <p>Quantidade de pedidos: {{ orders|length }}</p>
+        {% csrf_token %}
+        <button type="submit">Sair</button>
+    </form>
 
 
-    {% for order in orders %}
+    <!-- PEDIDOS NOVOS -->
+
+    <h2>Pedidos novos</h2>
+
+    <p>Quantidade: {{ new_orders|length }}</p>
+
+    {% for order in new_orders %}
 
         <div class="pedido">
 
@@ -46,6 +50,109 @@
 
             <p>Tipo: {{ order.get_order_type_display }}</p>
 
+            <h3>Itens</h3>
+
+            {% for item in order.orderitem_set.all %}
+
+                <p>
+                    {{ item.quantity }}x {{ item.product.name }}
+                    — R$ {{ item.unit_price }}
+                </p>
+
+            {% empty %}
+
+                <p>Nenhum item registrado.</p>
+
+            {% endfor %}
+
+            <p>
+                <strong>Total: R$ {{ order.total_amount }}</strong>
+            </p>
+
+            <form method="post" action="/pedido/{{ order.id }}/aceitar/">
+                {% csrf_token %}
+                <button type="submit">Aceitar pedido</button>
+            </form>
+
+        </div>
+
+    {% empty %}
+
+        <p>Nenhum pedido novo.</p>
+
+    {% endfor %}
+
+
+    <hr>
+
+<!-- PEDIDOS ACEITOS -->
+
+<h2>Pedidos aceitos</h2>
+
+<p>Quantidade: {{ accepted_orders|length }}</p>
+
+{% for order in accepted_orders %}
+
+    <div class="pedido">
+
+        <h2>Pedido #{{ order.id }}</h2>
+
+        <p>Cliente: {{ order.customer.name }}</p>
+
+        <p>Status: {{ order.get_status_display }}</p>
+
+        <p>Tipo: {{ order.get_order_type_display }}</p>
+
+        <h3>Itens</h3>
+
+        {% for item in order.orderitem_set.all %}
+
+            <p>
+                {{ item.quantity }}x {{ item.product.name }}
+                — R$ {{ item.unit_price }}
+            </p>
+
+        {% empty %}
+
+            <p>Nenhum item registrado.</p>
+
+        {% endfor %}
+
+        <p>
+            <strong>Total: R$ {{ order.total_amount }}</strong>
+        </p>
+
+        <form method="post" action="/pedido/{{ order.id }}/preparar/">
+            {% csrf_token %}
+            <button type="submit">Iniciar preparo</button>
+        </form>
+
+    </div>
+
+{% empty %}
+
+    <p>Nenhum pedido aceito.</p>
+
+{% endfor %}
+
+
+    <!-- PEDIDOS EM PREPARO -->
+
+    <h2>Pedidos em preparo</h2>
+
+    <p>Quantidade: {{ preparing_orders|length }}</p>
+
+    {% for order in preparing_orders %}
+
+        <div class="pedido">
+
+            <h2>Pedido #{{ order.id }}</h2>
+
+            <p>Cliente: {{ order.customer.name }}</p>
+
+            <p>Status: {{ order.get_status_display }}</p>
+
+            <p>Tipo: {{ order.get_order_type_display }}</p>
 
             <h3>Itens</h3>
 
@@ -56,68 +163,199 @@
                     — R$ {{ item.unit_price }}
                 </p>
 
+            {% empty %}
+
+                <p>Nenhum item registrado.</p>
+
             {% endfor %}
 
+                <p>
+                    <strong>Total: R$ {{ order.total_amount }}</strong>
+                </p>
+
+            <form method="post" action="/pedido/{{ order.id }}/pronto/">
+                {% csrf_token %}
+            <button type="submit">Marcar como pronto</button>
+            </form>
+         {% empty %}
+
+        <p>Nenhum pedido em preparo.</p>
+
+    {% endfor %}
+
+
+    <hr>
+
+
+    <!-- PEDIDOS PRONTOS -->
+
+    <h2>Pedidos prontos</h2>
+
+    <p>Quantidade: {{ ready_orders|length }}</p>
+
+    {% for order in ready_orders %}
+
+        <div class="pedido">
+
+            <h2>Pedido #{{ order.id }}</h2>
+
+            <p>Cliente: {{ order.customer.name }}</p>
+
+            <p>Status: {{ order.get_status_display }}</p>
+
+            <p>Tipo: {{ order.get_order_type_display }}</p>
+
+            <h3>Itens</h3>
+
+            {% for item in order.orderitem_set.all %}
+
+                <p>
+                    {{ item.quantity }}x {{ item.product.name }}
+                    — R$ {{ item.unit_price }}
+                </p>
+
+            {% empty %}
+
+                <p>Nenhum item registrado.</p>
+
+            {% endfor %}
 
             <p>
                 <strong>Total: R$ {{ order.total_amount }}</strong>
             </p>
 
-<h3>Histórico do pedido</h3>
+            <form method="post" action="/pedido/{{ order.id }}/entrega/">
+                {% csrf_token %}
+                <button type="submit">Saiu para entrega</button>
+            </form>
 
-{% for history in order.orderstatushistory_set.all %}
-    <p>
-        {{ history.get_status_display }} —
-        {{ history.created_at|date:"d/m/Y H:i" }}
-        — Alterado por: {{ history.changed_by }}
-    </p>
-{% empty %}
-    <p>Nenhum histórico registrado.</p>
-{% endfor %}
+        </div>
+
+    {% empty %}
+
+        <p>Nenhum pedido pronto.</p>
+
+    {% endfor %}
 
 
-{% if order.status == "NOVO" %}
+    <hr>
 
-    <form method="post" action="/pedido/{{ order.id }}/aceitar/">
-        {% csrf_token %}
-        <button type="submit">Aceitar pedido</button>
-    </form>
 
-{% elif order.status == "ACEITO" %}
+    <!-- PEDIDOS SAIU PARA ENTREGA -->
 
-    <form method="post" action="/pedido/{{ order.id }}/preparar/">
-        {% csrf_token %}
-        <button type="submit">Iniciar preparo</button>
-    </form>
+    <h2>Pedidos saiu para entrega</h2>
 
-{% elif order.status == "EM_PREPARO" %}
+    <p>Quantidade: {{ out_for_delivery_orders|length }}</p>
 
-    <form method="post" action="/pedido/{{ order.id }}/pronto/">
-        {% csrf_token %}
-        <button type="submit">Marcar como pronto</button>
-    </form>
+    {% for order in out_for_delivery_orders %}
 
-{% elif order.status == "PRONTO" %}
+        <div class="pedido">
 
-    <form method="post" action="/pedido/{{ order.id }}/entrega/">
-        {% csrf_token %}
-        <button type="submit">Saiu para entrega</button>
-    </form>
+            <h2>Pedido #{{ order.id }}</h2>
 
-{% elif order.status == "SAIU_PARA_ENTREGA" %}
+            <p>Cliente: {{ order.customer.name }}</p>
 
-    <form method="post" action="/pedido/{{ order.id }}/entregue/">
-        {% csrf_token %}
-        <button type="submit">Marcar como entregue</button>
-    </form>
+            <p>Status: {{ order.get_status_display }}</p>
 
-{% endif %}
+            <p>Tipo: {{ order.get_order_type_display }}</p>
 
-</div>
+            <h3>Itens</h3>
 
-<hr>
+            {% for item in order.orderitem_set.all %}
 
-{% endfor %}
+                <p>
+                    {{ item.quantity }}x {{ item.product.name }}
+                    — R$ {{ item.unit_price }}
+                </p>
+
+            {% empty %}
+
+                <p>Nenhum item registrado.</p>
+
+            {% endfor %}
+
+            <p>
+                <strong>Total: R$ {{ order.total_amount }}</strong>
+            </p>
+
+            <form method="post" action="/pedido/{{ order.id }}/entregue/">
+                {% csrf_token %}
+                <button type="submit">Marcar como entregue</button>
+            </form>
+
+        </div>
+
+    {% empty %}
+
+        <p>Nenhum pedido saiu para entrega.</p>
+
+    {% endfor %}
+
+
+    <hr>
+
+
+    <!-- PEDIDOS ENTREGUES -->
+
+    <h2>Pedidos entregues</h2>
+
+    <p>Quantidade: {{ delivered_orders|length }}</p>
+
+    {% for order in delivered_orders %}
+
+        <div class="pedido">
+
+            <h2>Pedido #{{ order.id }}</h2>
+
+            <p>Cliente: {{ order.customer.name }}</p>
+
+            <p>Status: {{ order.get_status_display }}</p>
+
+            <p>Tipo: {{ order.get_order_type_display }}</p>
+
+            <h3>Itens</h3>
+
+            {% for item in order.orderitem_set.all %}
+
+                <p>
+                    {{ item.quantity }}x {{ item.product.name }}
+                    — R$ {{ item.unit_price }}
+                </p>
+
+            {% empty %}
+
+                <p>Nenhum item registrado.</p>
+
+            {% endfor %}
+
+            <p>
+                <strong>Total: R$ {{ order.total_amount }}</strong>
+            </p>
+
+            <h3>Histórico do pedido</h3>
+
+            {% for history in order.orderstatushistory_set.all %}
+
+                <p>
+                    {{ history.get_status_display }} —
+                    {{ history.created_at|date:"d/m/Y H:i" }}
+                    — Alterado por: {{ history.changed_by }}
+                </p>
+
+            {% empty %}
+
+                <p>Nenhum histórico registrado.</p>
+
+            {% endfor %}
+
+        </div>
+
+    {% empty %}
+
+        <p>Nenhum pedido entregue.</p>
+
+    {% endfor %}
+
 </body>
 
 </html>

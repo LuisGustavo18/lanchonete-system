@@ -16,8 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from core.views import home, accept_order, start_preparing, mark_ready, out_for_delivery, mark_delivered, manage_products
-
+from core.views import (
+    home,
+    accept_order,
+    start_preparing,
+    mark_ready,
+    out_for_delivery,
+    mark_delivered,
+    manage_products,
+    product_list,
+    product_create,
+    product_update,
+    product_deactivate,
+    product_activate,
+    confirm_delivery,
+)
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home),
@@ -29,4 +42,28 @@ urlpatterns = [
     path("__debug__/", include("debug_toolbar.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
     path("produtos/gerenciar/", manage_products),
+    path("produtos/", product_list),
+    path("produtos/novo/", product_create),
+path(
+    "produtos/<int:product_id>/editar/",
+    product_update,
+    name="product_update",
+),
+
+path(
+    "produtos/<int:product_id>/inativar/",
+    product_deactivate,
+    name="product_deactivate",
+),
+path(
+    "produtos/<int:product_id>/ativar/",
+    product_activate,
+    name="product_activate",
+),
+
+path(
+    "seu-pedido/confirmar/<uuid:token>/",
+    confirm_delivery,
+    name="confirm_delivery",
+),
 ]
