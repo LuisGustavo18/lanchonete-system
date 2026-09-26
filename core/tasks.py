@@ -1,7 +1,7 @@
-from django.utils import timezone
 from datetime import timedelta
+
 from django.utils import timezone
-from datetime import timedelta
+
 from .models import Order, OrderStatusHistory
 
 
@@ -23,8 +23,9 @@ def auto_complete_deliveries():
                 "delivery_confirmed_by"
             ]
         )
-    OrderStatusHistory.objects.create(
-    order=order,
-    status=order.status,
-    changed_by=None
-)
+
+        OrderStatusHistory.objects.create(
+            order=order,
+            status=order.status,
+            changed_by=None
+        )
