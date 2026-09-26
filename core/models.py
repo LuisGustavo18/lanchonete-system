@@ -127,10 +127,21 @@ class Order(models.Model):
         DELIVERED = "ENTREGUE", "Entregue"
 
     confirmation_token = models.UUIDField(
-    default=uuid.uuid4,
-    unique=True,
-    editable=False
-)
+        default=uuid.uuid4,
+        unique=True,
+        editable=False
+    )
+
+    out_for_delivery_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    delivery_confirmed_by = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True
+    )
     class OrderType(models.TextChoices):
         DELIVERY = "DELIVERY", "Entrega"
         PICKUP = "PICKUP", "Retirada"
@@ -237,5 +248,12 @@ class OrderStatusHistory(models.Model):
 
     def __str__(self):
         return f"Pedido #{self.order.id} - {self.status}"
+
+
+    delivery_confirmed_by = models.CharField(
+    max_length=20,
+    null=True,
+    blank=True
+)
 
     

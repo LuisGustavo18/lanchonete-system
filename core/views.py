@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
+from django.utils import timezone
 from .models import (
     Order,
     OrderItem,
@@ -327,7 +328,8 @@ def out_for_delivery(request, order_id):
         return redirect("/")
 
     order.status = Order.Status.OUT_FOR_DELIVERY
-    order.save(update_fields=["status"])
+    order.out_for_delivery_at = timezone.now()
+    order.save(update_fields=["status", "out_for_delivery_at"])
 
     OrderStatusHistory.objects.create(
         order=order,
@@ -367,11 +369,30 @@ def mark_delivered(request, order_id):
     return redirect("/")
 
 
-    def confirm_delivery(request, token):
+def confirm_delivery(request, token):
     order = get_object_or_404(
         Order,
         confirmation_token=token
     )
+
+    if request.method == "POST":
+        if order.status == Order.Status.OUT_FOR_DELIVERY:
+            order.status = Order.Status.DELIVERED
+            order.delivery_confirmed_by = "CLIENTE"
+            order.save(
+                update_fields=[
+                    "status",
+                    "delivery_confirmed_by"
+                ]
+            )
+
+            OrderStatusHistory.objects.create(
+                order=order,
+                status=order.status,
+                changed_by=None
+            )
+
+        return redirect("/")
 
     return render(
         request,

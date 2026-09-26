@@ -2,4 +2,13 @@
 
 <p>Pedido #{{ order.id }}</p>
 
-<p>Você recebeu este pedido?</p>
+{% if order.status == "SAIU_PARA_ENTREGA" %}
+    <p>Você recebeu este pedido?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Sim, recebi meu pedido</button>
+    </form>
+{% elif order.status == "ENTREGUE" %}
+    <p>Este pedido já foi marcado como entregue.</p>
+{% endif %}
