@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
 from django.utils import timezone
+from datetime import timedelta
 from .models import (
     Order,
     OrderItem,
@@ -375,7 +376,17 @@ def confirm_delivery(request, token):
         confirmation_token=token
     )
 
+    limite = timezone.now() - timedelta(hours=2)
+
     if request.method == "POST":
+        if order.out_for_delivery_at < limite:
+            return render(
+             request,
+            "core/confirmation_expired.html",
+            {"order": order}
+    )
+
+
         if order.status == Order.Status.OUT_FOR_DELIVERY:
             order.status = Order.Status.DELIVERED
             order.delivery_confirmed_by = "CLIENTE"
