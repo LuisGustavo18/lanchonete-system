@@ -78,6 +78,66 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+class Table(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.CASCADE,
+        related_name="tables",
+    )
+    number = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Mesa"
+        verbose_name_plural = "Mesas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "number"],
+                name="unique_table_number_per_business",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Mesa {self.number}"
+
+
+class Comanda(models.Model):
+
+    class Status(models.TextChoices):
+        OPEN = "ABERTA", "Aberta"
+        CLOSED = "FECHADA", "Fechada"
+
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.CASCADE,
+        related_name="comandas",
+    )
+
+    table = models.ForeignKey(
+        Table,
+        on_delete=models.PROTECT,
+        related_name="comandas",
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
+
+    opened_at = models.DateTimeField(auto_now_add=True)
+    closed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Comanda"
+        verbose_name_plural = "Comandas"
+
+    def __str__(self):
+        return f"Comanda #{self.id} - Mesa {self.table.number}"
 
 class Customer(models.Model):
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
@@ -142,18 +202,31 @@ class Order(models.Model):
         null=True,
         blank=True
     )
+
     class OrderType(models.TextChoices):
         DELIVERY = "DELIVERY", "Entrega"
         PICKUP = "PICKUP", "Retirada"
+        TABLE = "MESA", "Mesa"
 
     class PaymentMethod(models.TextChoices):
+        PENDING = "PENDENTE", "Pendente"
         PIX = "PIX", "Pix"
         CASH = "DINHEIRO", "Dinheiro"
         CREDIT_CARD = "CARTAO_CREDITO", "Cartão de crédito"
         DEBIT_CARD = "CARTAO_DEBITO", "Cartão de débito"
 
+
+
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+
+    comanda = models.ForeignKey(
+    Comanda,
+    on_delete=models.PROTECT,
+    related_name="orders",
+    null=True,
+    blank=True,
+)
 
     status = models.CharField(
         max_length=30,

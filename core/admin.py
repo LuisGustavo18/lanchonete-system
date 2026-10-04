@@ -10,6 +10,8 @@ from .models import (
     Order,
     OrderItem,
     OrderStatusHistory,
+    Table,
+    Comanda,
 )
 
 admin.site.register(Business)
@@ -21,3 +23,5 @@ admin.site.register(Address)
 admin.site.register(Order)
 admin.site.register(OrderItem)
 admin.site.register(OrderStatusHistory)
+admin.site.register(Table)
+admin.site.register(Comanda)

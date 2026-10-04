@@ -30,6 +30,14 @@ from core.views import (
     product_deactivate,
     product_activate,
     confirm_delivery,
+    table_list,
+    table_create,
+    table_deactivate,
+    table_activate,
+    comanda_create,
+    comanda_list,
+    comanda_detail,
+    pedido_create,
 )
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -66,4 +74,45 @@ path(
     confirm_delivery,
     name="confirm_delivery",
 ),
+
+path("mesas/", table_list, name="table_list"),
+
+path("mesas/nova/", table_create, name="table_create"),
+
+path(
+    "mesas/<int:table_id>/desativar/",
+    table_deactivate,
+    name="table_deactivate",
+),
+
+path(
+    "mesas/<int:table_id>/ativar/",
+    table_activate,
+    name="table_activate",
+),
+
+path(
+    "mesas/<int:table_id>/comanda/nova/",
+    comanda_create,
+    name="comanda_create",
+),
+
+path(
+    "comandas/",
+    comanda_list,
+    name="comanda_list",
+),
+
+path(
+    "comandas/<int:comanda_id>/",
+    comanda_detail,
+    name="comanda_detail",
+),
+
+path(
+    "comandas/<int:comanda_id>/pedido/novo/",
+    pedido_create,
+    name="pedido_create",
+),
+
 ]

@@ -1,0 +1,21 @@
+<body>
+    <h1>Cadastrar mesa</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <label for="number">Número ou identificação da mesa:</label>
+        <input
+            type="text"
+            id="number"
+            name="number"
+            maxlength="20"
+            required
+        >
+
+        <button type="submit">Cadastrar mesa</button>
+    </form>
+
+    <a href="/mesas/">Voltar para mesas</a>
+</body>
+</html>

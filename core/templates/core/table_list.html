@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesas</title>
+</head>
+<body>
+    <h1>Mesas do estabelecimento</h1>
+
+    <a href="/mesas/nova/">Cadastrar nova mesa</a>
+
+```
+{% if tables %}
+<ul>
+{% for table in tables %}
+<li>
+Mesa {{ table.number }}
+
+            {% if table.is_active %}
+                — Ativa
+
+                <form method="POST" action="/mesas/{{ table.id }}/desativar/">
+                    {% csrf_token %}
+                    <button type="submit">Desativar</button>
+                </form>
+
+                <form method="GET" action="/mesas/{{ table.id }}/comanda/nova/">
+                    <button type="submit">Abrir comanda</button>
+                </form>
+            {% else %}
+                — Inativa
+
+                <form method="POST" action="/mesas/{{ table.id }}/ativar/">
+                    {% csrf_token %}
+                    <button type="submit">Ativar</button>
+                </form>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+
+{% else %}
+<p>Nenhuma mesa cadastrada.</p>
+{% endif %}
+```
+</body>
+</html>

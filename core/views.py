@@ -9,6 +9,9 @@ from .models import (
     OrderStatusHistory,
     Membership,
     Product,
+    Customer,
+    Table,
+    Comanda,
 )
 
 
@@ -28,6 +31,243 @@ def manage_products(request):
         return redirect("/")
 
     return render(request, "core/manage_products.html")
+
+@login_required
+def table_list(request):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    tables = Table.objects.filter(
+        business=membership.business
+    ).order_by("number")
+
+    return render(
+        request,
+        "core/table_list.html",
+        {"tables": tables}
+    )
+
+@login_required
+def table_create(request):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    if request.method == "POST":
+        number = request.POST.get("number", "").strip()
+
+        if number:
+            already_exists = Table.objects.filter(
+                business=membership.business,
+                number=number
+            ).exists()
+
+            if not already_exists:
+                Table.objects.create(
+                    business=membership.business,
+                    number=number
+                )
+                return redirect("/mesas/")
+
+    return render(
+        request,
+        "core/table_create.html"
+    )
+
+@login_required
+def table_deactivate(request, table_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    table = get_object_or_404(
+        Table,
+        id=table_id,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        table.is_active = False
+        table.save(update_fields=["is_active"])
+
+    return redirect("/mesas/")
+
+@login_required
+def table_activate(request, table_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    table = get_object_or_404(
+        Table,
+        id=table_id,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        table.is_active = True
+        table.save(update_fields=["is_active"])
+
+    return redirect("/mesas/")
+
+
+@login_required
+def comanda_create(request, table_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    table = get_object_or_404(
+        Table,
+        id=table_id,
+        business=membership.business,
+        is_active=True
+    )
+
+    if request.method == "POST":
+        Comanda.objects.create(
+            business=membership.business,
+            table=table
+        )
+
+        return redirect("/comandas/")
+
+    return render(
+        request,
+        "core/comanda_create.html",
+        {"table": table}
+    )
+
+
+
+@login_required
+def comanda_list(request):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comandas = Comanda.objects.filter(
+        business=membership.business
+    ).select_related("table").order_by("-opened_at")
+
+    return render(
+        request,
+        "core/comanda_list.html",
+        {"comandas": comandas}
+    )    
+
+
+@login_required
+def comanda_detail(request, comanda_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda.objects.select_related("table"),
+        id=comanda_id,
+        business=membership.business
+    )
+
+    pedidos = comanda.orders.prefetch_related(
+        "orderitem_set__product"
+    ).order_by("-created_at")
+
+    return render(
+        request,
+        "core/comanda_detail.html",
+        {
+            "comanda": comanda,
+            "pedidos": pedidos,
+        }
+    )
+
+
+@login_required
+def pedido_create(request, comanda_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    if request.method == "POST":
+        customer, _ = Customer.objects.get_or_create(
+            business=membership.business,
+            name="Cliente de Mesa",
+            defaults={
+                "phone": "0000000000",
+            }
+        )
+
+        Order.objects.create(
+            business=membership.business,
+            customer=customer,
+            comanda=comanda,
+            order_type=Order.OrderType.TABLE,
+            payment_method=Order.PaymentMethod.PENDING,
+            status=Order.Status.NEW,
+            total_amount=0,
+        )
+
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+
+
+
 
 @login_required
 def product_list(request):
@@ -379,12 +619,15 @@ def confirm_delivery(request, token):
     limite = timezone.now() - timedelta(hours=2)
 
     if request.method == "POST":
+        if order.status != Order.Status.OUT_FOR_DELIVERY:
+            return redirect("/")
+
         if order.out_for_delivery_at < limite:
             return render(
-             request,
-            "core/confirmation_expired.html",
-            {"order": order}
-    )
+                request,
+                "core/confirmation_expired.html",
+                {"order": order}
+            )
 
 
         if order.status == Order.Status.OUT_FOR_DELIVERY:
