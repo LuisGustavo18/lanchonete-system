@@ -38,7 +38,11 @@ from core.views import (
     comanda_list,
     comanda_detail,
     pedido_create,
+    pedido_item_create,
+    pedido_item_delete,
 )
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home),
@@ -113,6 +117,18 @@ path(
     "comandas/<int:comanda_id>/pedido/novo/",
     pedido_create,
     name="pedido_create",
+),
+
+path(
+    "comandas/<int:comanda_id>/pedido/<int:pedido_id>/item/novo/",
+    pedido_item_create,
+    name="pedido_item_create",
+),
+
+path(
+    "comandas/<int:comanda_id>/pedido/<int:pedido_id>/item/<int:item_id>/remover/",
+    pedido_item_delete,
+    name="pedido_item_delete",
 ),
 
 ]

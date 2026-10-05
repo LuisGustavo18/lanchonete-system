@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -9,28 +8,29 @@
 <body>
     <h1>Comandas</h1>
 
-```
-{% for comanda in comandas %}
-    <div>
-        <h2>Comanda #{{ comanda.id }}</h2>
+    {% for comanda in comandas %}
+        <div>
+            <h2>Comanda #{{ comanda.id }}</h2>
 
-        <p>Mesa: {{ comanda.table.number }}</p>
+            <p>Mesa: {{ comanda.table.number }}</p>
 
-        <p>Status: {{ comanda.get_status_display }}</p>
+            <p>Status: {{ comanda.get_status_display }}</p>
 
-        <p>
-            Aberta em:
-            {{ comanda.opened_at|date:"d/m/Y H:i" }}
-        </p>
-    </div>
+            <p>
+                Aberta em:
+                {{ comanda.opened_at|date:"d/m/Y H:i" }}
+            </p>
 
-    <hr>
-{% empty %}
-    <p>Nenhuma comanda cadastrada.</p>
-{% endfor %}
+            <a href="{% url 'comanda_detail' comanda.id %}">
+                Abrir comanda
+            </a>
+        </div>
 
-<a href="/mesas/">Voltar para mesas</a>
-```
+        <hr>
+    {% empty %}
+        <p>Nenhuma comanda cadastrada.</p>
+    {% endfor %}
 
+    <a href="/mesas/">Voltar para mesas</a>
 </body>
 </html>

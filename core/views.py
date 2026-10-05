@@ -209,12 +209,18 @@ def comanda_detail(request, comanda_id):
         "orderitem_set__product"
     ).order_by("-created_at")
 
+    produtos = Product.objects.filter(
+    business=membership.business,
+    is_active=True
+    ).order_by("name")
+
     return render(
         request,
         "core/comanda_detail.html",
         {
-            "comanda": comanda,
-            "pedidos": pedidos,
+         "comanda": comanda,
+         "pedidos": pedidos,
+        "produtos": produtos,
         }
     )
 
@@ -267,7 +273,106 @@ def pedido_create(request, comanda_id):
     )
 
 
+@login_required
+def pedido_item_create(request, comanda_id, pedido_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
 
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    pedido = get_object_or_404(
+        Order,
+        id=pedido_id,
+        comanda=comanda,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        product_id = request.POST.get("product_id")
+        quantity = request.POST.get("quantity")
+
+        product = get_object_or_404(
+            Product,
+            id=product_id,
+            business=membership.business,
+            is_active=True
+        )
+
+        OrderItem.objects.create(
+        order=pedido,
+        product=product,
+        quantity=quantity,
+        unit_price=product.price,
+    )
+
+    pedido.calculate_total()
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+    
+@login_required
+def pedido_item_delete(request, comanda_id, pedido_id, item_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    pedido = get_object_or_404(
+        Order,
+        id=pedido_id,
+        comanda=comanda,
+        business=membership.business
+    )
+
+    item = get_object_or_404(
+        OrderItem,
+        id=item_id,
+        order=pedido
+    )
+
+    if request.method == "POST":
+        item.delete()
+
+        pedido.calculate_total()
+
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
 
 @login_required
 def product_list(request):

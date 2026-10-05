@@ -22,17 +22,58 @@
         <p><strong>Status:</strong> {{ pedido.get_status_display }}</p>
 
         <ul>
-            {% for item in pedido.orderitem_set.all %}
-                <li>
-                    {{ item.quantity }}x {{ item.product.name }}
-                    — R$ {{ item.get_subtotal|floatformat:2 }}
-                </li>
-            {% empty %}
-                <li>Este pedido ainda não possui produtos.</li>
-            {% endfor %}
-        </ul>
+    {% for item in pedido.orderitem_set.all %}
+      <li>
+    {{ item.quantity }}x {{ item.product.name }}
+    — R$ {{ item.unit_price|floatformat:2 }} cada
+    — Subtotal: R$ {{ item.get_subtotal|floatformat:2 }}
 
-        <p><strong>Total do pedido:</strong> R$ {{ pedido.total_amount|floatformat:2 }}</p>
+    <form
+        method="post"
+        action="{% url 'pedido_item_delete' comanda.id pedido.id item.id %}"
+        style="display: inline;"
+    >
+        {% csrf_token %}
+        <button type="submit">Remover</button>
+    </form>
+</li>
+    {% empty %}
+        <li>Este pedido ainda não possui produtos.</li>
+    {% endfor %}
+</ul>
+
+<form method="post" action="{% url 'pedido_item_create' comanda.id pedido.id %}">
+    {% csrf_token %}
+
+    <label for="product_id_{{ pedido.id }}">Produto:</label>
+
+<select
+    name="product_id"
+    id="product_id_{{ pedido.id }}"
+    required
+>
+    <option value="">Selecione um produto</option>
+
+    {% for produto in produtos %}
+        <option value="{{ produto.id }}">
+            {{ produto.name }} — R$ {{ produto.price|floatformat:2 }}
+        </option>
+    {% endfor %}
+</select>
+    <label for="quantity_{{ pedido.id }}">Quantidade:</label>
+    <input
+        type="number"
+        name="quantity"
+        id="quantity_{{ pedido.id }}"
+        min="1"
+        value="1"
+        required
+    >
+
+    <button type="submit">Adicionar produto</button>
+</form>
+
+<p><strong>Total do pedido:</strong> R$ {{ pedido.total_amount|floatformat:2 }}</p>
     </section>
 
     <hr>
