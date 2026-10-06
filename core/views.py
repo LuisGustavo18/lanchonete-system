@@ -375,6 +375,69 @@ def pedido_item_delete(request, comanda_id, pedido_id, item_id):
     )
 
 @login_required
+def pedido_item_update(request, comanda_id, pedido_id, item_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_role(membership, "OWNER", "MANAGER"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    pedido = get_object_or_404(
+        Order,
+        id=pedido_id,
+        comanda=comanda,
+        business=membership.business
+    )
+
+    item = get_object_or_404(
+        OrderItem,
+        id=item_id,
+        order=pedido
+    )
+
+    if request.method == "POST":
+        quantity = request.POST.get("quantity")
+
+        if not quantity or not quantity.isdigit():
+            return redirect(
+                "comanda_detail",
+                comanda_id=comanda.id
+            )
+
+        quantity = int(quantity)
+
+        if quantity < 1:
+            return redirect(
+                "comanda_detail",
+                comanda_id=comanda.id
+            )
+
+        item.quantity = quantity
+        item.save(update_fields=["quantity"])
+
+        pedido.calculate_total()
+
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+
+@login_required
 def product_list(request):
     membership = get_object_or_404(
         Membership,

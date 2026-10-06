@@ -29,13 +29,34 @@
     — Subtotal: R$ {{ item.get_subtotal|floatformat:2 }}
 
     <form
-        method="post"
-        action="{% url 'pedido_item_delete' comanda.id pedido.id item.id %}"
-        style="display: inline;"
+    method="post"
+    action="{% url 'pedido_item_update' comanda.id pedido.id item.id %}"
+    style="display: inline;"
+>
+    {% csrf_token %}
+
+    <label for="quantity_{{ item.id }}">Quantidade:</label>
+
+    <input
+        type="number"
+        name="quantity"
+        id="quantity_{{ item.id }}"
+        min="1"
+        value="{{ item.quantity }}"
+        required
     >
-        {% csrf_token %}
-        <button type="submit">Remover</button>
-    </form>
+
+    <button type="submit">Atualizar</button>
+</form>
+
+<form
+    method="post"
+    action="{% url 'pedido_item_delete' comanda.id pedido.id item.id %}"
+    style="display: inline;"
+>
+    {% csrf_token %}
+    <button type="submit">Remover</button>
+</form>
 </li>
     {% empty %}
         <li>Este pedido ainda não possui produtos.</li>
