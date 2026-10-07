@@ -41,6 +41,8 @@ from core.views import (
     pedido_item_create,
     pedido_item_delete,
     pedido_item_update,
+    pedido_payment_update,
+    comanda_close,
 )
 
 
@@ -136,6 +138,19 @@ path(
     "comandas/<int:comanda_id>/pedido/<int:pedido_id>/item/<int:item_id>/editar/",
     pedido_item_update,
     name="pedido_item_update",
+),
+
+
+path(
+    "comandas/<int:comanda_id>/pedido/<int:pedido_id>/pagamento/",
+    pedido_payment_update,
+    name="pedido_payment_update",
+),
+
+path(
+    "comandas/<int:comanda_id>/fechar/",
+    comanda_close,
+    name="comanda_close",
 ),
 
 ]

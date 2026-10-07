@@ -9,6 +9,13 @@ class Business(models.Model):
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
+    service_charge_enabled = models.BooleanField(default=False)
+
+    service_charge_percent = models.DecimalField(
+    max_digits=5,
+    decimal_places=2,
+    default=0
+)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -215,18 +222,23 @@ class Order(models.Model):
         CREDIT_CARD = "CARTAO_CREDITO", "Cartão de crédito"
         DEBIT_CARD = "CARTAO_DEBITO", "Cartão de débito"
 
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.CASCADE
+    )
 
-
-    business = models.ForeignKey(Business, on_delete=models.CASCADE)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE
+    )
 
     comanda = models.ForeignKey(
-    Comanda,
-    on_delete=models.PROTECT,
-    related_name="orders",
-    null=True,
-    blank=True,
-)
+        Comanda,
+        on_delete=models.PROTECT,
+        related_name="orders",
+        null=True,
+        blank=True,
+    )
 
     status = models.CharField(
         max_length=30,
@@ -250,6 +262,18 @@ class Order(models.Model):
         default=0,
     )
 
+    service_charge_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+    )
+
+    service_charge_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
     observation = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -263,16 +287,26 @@ class Order(models.Model):
         return f"Pedido #{self.id} - {self.customer.name}"
 
     def calculate_total(self):
-        total = sum(
+        subtotal = sum(
             item.get_subtotal()
             for item in self.orderitem_set.all()
         )
 
-        self.total_amount = total
-        self.save(update_fields=["total_amount"])
+        service_charge = (
+            subtotal * self.service_charge_percent
+        ) / 100
 
-        return total
+        self.service_charge_amount = service_charge
+        self.total_amount = subtotal + service_charge
 
+        self.save(
+            update_fields=[
+                "service_charge_amount",
+                "total_amount",
+            ]
+        )
+
+        return self.total_amount
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)

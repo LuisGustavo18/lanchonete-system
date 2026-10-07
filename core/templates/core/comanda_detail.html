@@ -94,8 +94,87 @@
     <button type="submit">Adicionar produto</button>
 </form>
 
-<p><strong>Total do pedido:</strong> R$ {{ pedido.total_amount|floatformat:2 }}</p>
+```html
+```html
+<p>
+    <strong>Subtotal:</strong>
+    R$ {{ pedido.subtotal|floatformat:2 }}
+</p>
+
+<p>
+    <strong>Taxa de serviço ({{ pedido.service_charge_percent|floatformat:2 }}%):</strong>
+    R$ {{ pedido.service_charge_amount|floatformat:2 }}
+</p>
+
+<p>
+    <strong>Total do pedido:</strong>
+    R$ {{ pedido.total_amount|floatformat:2 }}
+</p>
+
+<form method="post" action="{% url 'pedido_payment_update' comanda.id pedido.id %}">
+    {% csrf_token %}
+
+    <label for="payment_method_{{ pedido.id }}">
+        Forma de pagamento:
+    </label>
+
+    <select
+        name="payment_method"
+        id="payment_method_{{ pedido.id }}"
+        required
+    >
+        <option value="">Selecione</option>
+
+        <option value="PIX"
+            {% if pedido.payment_method == "PIX" %}selected{% endif %}>
+            Pix
+        </option>
+
+        <option value="DINHEIRO"
+            {% if pedido.payment_method == "DINHEIRO" %}selected{% endif %}>
+            Dinheiro
+        </option>
+
+        <option value="CARTAO_CREDITO"
+            {% if pedido.payment_method == "CARTAO_CREDITO" %}selected{% endif %}>
+            Cartão de crédito
+        </option>
+
+        <option value="CARTAO_DEBITO"
+            {% if pedido.payment_method == "CARTAO_DEBITO" %}selected{% endif %}>
+            Cartão de débito
+        </option>
+    </select>
+
+    <button type="submit">Registrar pagamento</button>
+</form>
+
+<p>
+    <strong>Pagamento:</strong>
+
+    {% if pedido.payment_method == "PENDENTE" %}
+        Pendente
+    {% elif pedido.payment_method == "PIX" %}
+        Pix
+    {% elif pedido.payment_method == "DINHEIRO" %}
+        Dinheiro
+    {% elif pedido.payment_method == "CARTAO_CREDITO" %}
+        Cartão de crédito
+    {% elif pedido.payment_method == "CARTAO_DEBITO" %}
+        Cartão de débito
+    {% endif %}
+</p>
+
     </section>
+
+    ```html
+{% if comanda.status == "ABERTA" %}
+    <form method="post" action="{% url 'comanda_close' comanda.id %}">
+        {% csrf_token %}
+        <button type="submit">Fechar comanda</button>
+    </form>
+{% endif %}
+```
 
     <hr>
 {% empty %}

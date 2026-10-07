@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
 from django.utils import timezone
 from datetime import timedelta
+from core.permissions import has_permission
 from .models import (
     Order,
     OrderItem,
@@ -40,8 +41,8 @@ def table_list(request):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
-        return redirect("/")
+    if not has_permission(membership, "manage_comandas"):
+         return redirect("/")
 
     tables = Table.objects.filter(
         business=membership.business
@@ -140,7 +141,7 @@ def comanda_create(request, table_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     table = get_object_or_404(
@@ -174,7 +175,7 @@ def comanda_list(request):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comandas = Comanda.objects.filter(
@@ -196,7 +197,7 @@ def comanda_detail(request, comanda_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comanda = get_object_or_404(
@@ -209,18 +210,24 @@ def comanda_detail(request, comanda_id):
         "orderitem_set__product"
     ).order_by("-created_at")
 
+    for pedido in pedidos:
+        pedido.subtotal = sum(
+            item.get_subtotal()
+            for item in pedido.orderitem_set.all()
+        )
+
     produtos = Product.objects.filter(
-    business=membership.business,
-    is_active=True
+        business=membership.business,
+        is_active=True
     ).order_by("name")
 
     return render(
         request,
         "core/comanda_detail.html",
         {
-         "comanda": comanda,
-         "pedidos": pedidos,
-        "produtos": produtos,
+            "comanda": comanda,
+            "pedidos": pedidos,
+            "produtos": produtos,
         }
     )
 
@@ -233,7 +240,7 @@ def pedido_create(request, comanda_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comanda = get_object_or_404(
@@ -259,6 +266,11 @@ def pedido_create(request, comanda_id):
             order_type=Order.OrderType.TABLE,
             payment_method=Order.PaymentMethod.PENDING,
             status=Order.Status.NEW,
+            service_charge_percent=(
+                membership.business.service_charge_percent
+                if membership.business.service_charge_enabled
+                else 0
+            ),
             total_amount=0,
         )
 
@@ -281,7 +293,7 @@ def pedido_item_create(request, comanda_id, pedido_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comanda = get_object_or_404(
@@ -336,7 +348,7 @@ def pedido_item_delete(request, comanda_id, pedido_id, item_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comanda = get_object_or_404(
@@ -382,7 +394,7 @@ def pedido_item_update(request, comanda_id, pedido_id, item_id):
         is_active=True
     )
 
-    if not has_role(membership, "OWNER", "MANAGER"):
+    if not has_permission(membership, "manage_comandas"):
         return redirect("/")
 
     comanda = get_object_or_404(
@@ -431,6 +443,104 @@ def pedido_item_update(request, comanda_id, pedido_id, item_id):
             "comanda_detail",
             comanda_id=comanda.id
         )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+
+@login_required
+def pedido_payment_update(request, comanda_id, pedido_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_permission(membership, "process_payment"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    pedido = get_object_or_404(
+        Order,
+        id=pedido_id,
+        comanda=comanda,
+        business=membership.business
+    )
+
+    if request.method == "POST":
+        payment_method = request.POST.get("payment_method")
+
+        valid_methods = [
+            choice[0]
+            for choice in Order.PaymentMethod.choices
+        ]
+
+        if payment_method not in valid_methods:
+            return redirect(
+                "comanda_detail",
+                comanda_id=comanda.id
+            )
+
+        pedido.payment_method = payment_method
+        pedido.save(update_fields=["payment_method"])
+
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
+
+    return redirect(
+        "comanda_detail",
+        comanda_id=comanda.id
+    )
+
+
+
+@login_required
+def comanda_close(request, comanda_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
+    )
+
+    if not has_permission(membership, "process_payment"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    if request.method == "POST":
+        pedidos = comanda.orders.all()
+
+        for pedido in pedidos:
+            if pedido.payment_method == Order.PaymentMethod.PENDING:
+                return redirect(
+                    "comanda_detail",
+                    comanda_id=comanda.id
+                )
+
+        comanda.status = Comanda.Status.CLOSED
+        comanda.closed_at = timezone.now()
+        comanda.save(
+            update_fields=[
+                "status",
+                "closed_at",
+            ]
+        )
+
+        return redirect("comanda_list")
 
     return redirect(
         "comanda_detail",
