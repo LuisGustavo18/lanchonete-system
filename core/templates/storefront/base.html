@@ -1,0 +1,11 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Cardápio{% endblock %} · {{ business.name|default:'Lanchonete' }}</title><link rel="stylesheet" href="{% static 'core/css/app.css' %}"><script src="{% static 'core/js/htmx.min.js' %}" defer></script></head>
+<body>
+<header class="border-b border-stone-300 bg-white"><div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5"><a class="text-lg font-semibold" href="{% if business %}{% url 'menu' business.pk %}{% else %}/cardapio/{% endif %}">{{ business.name|default:'Lanchonete' }}</a><a href="/" class="text-xs muted underline underline-offset-4">Área da equipe</a></div></header>
+<main class="mx-auto max-w-6xl px-5 py-8">{% block content %}{% endblock %}</main>
+<footer class="mx-auto max-w-6xl px-5 pb-8 text-xs muted">{% if business.phone %}Contato: {{ business.phone }}{% endif %}</footer>
+<div id="cart-error" role="alert" class="hidden fixed bottom-4 left-4 right-4 mx-auto max-w-md rounded border border-stone-300 bg-white p-4 text-sm">Não foi possível atualizar o carrinho. Verifique a quantidade e tente novamente.</div>
+<script>document.addEventListener('htmx:responseError', () => document.getElementById('cart-error').classList.remove('hidden'));document.addEventListener('htmx:sendError', () => document.getElementById('cart-error').classList.remove('hidden'));document.addEventListener('htmx:beforeRequest', () => document.getElementById('cart-error').classList.add('hidden'));</script>
+</body></html>

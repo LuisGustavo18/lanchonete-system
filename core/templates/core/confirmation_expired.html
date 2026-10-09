@@ -1,9 +1,3 @@
-<h1>Link de confirmação expirado</h1>
-
-<p>
-    O prazo para confirmar o recebimento deste pedido terminou.
-</p>
-
-<p>
-    Entre em contato com a lanchonete caso ainda precise confirmar a entrega.
-</p>
+{% extends 'core/base.html' %}
+{% block title %}Confirmação expirada · Lanchonete{% endblock %}
+{% block content %}<div class="panel mx-auto my-8 max-w-md p-7"><p class="mb-3 text-sm muted">Pedido #{{ order.id }}</p><h1 class="text-2xl font-semibold">Prazo de confirmação encerrado</h1><p class="mt-5 text-sm muted">Entre em contato com a lanchonete caso precise confirmar o recebimento ou informar um problema com a entrega.</p></div>{% endblock %}

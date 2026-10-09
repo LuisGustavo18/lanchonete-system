@@ -1,0 +1,12 @@
+{% extends 'storefront/base.html' %}
+{% block content %}
+<div class="mb-7"><p class="mb-2 text-xs uppercase tracking-wider muted">Peça por aqui</p><h1 class="text-3xl font-semibold tracking-tight">Cardápio</h1><p class="mt-2 text-sm muted">Escolha seus produtos e conte como prefere recebê-los.</p></div>
+<nav aria-label="Categorias" class="mb-7 flex gap-2 overflow-x-auto pb-2">{% for category in categories %}<a href="#category-{{ category.pk }}" class="btn whitespace-nowrap">{{ category.name }}</a>{% endfor %}<a href="#cart-panel" class="btn whitespace-nowrap lg:hidden">Ver carrinho</a></nav>
+<div class="grid items-start gap-8 lg:grid-cols-[1fr_340px]">
+<div class="space-y-8">{% for category in categories %}<section id="category-{{ category.pk }}" class="scroll-mt-5"><h2 class="mb-4 border-b border-stone-300 pb-3 text-xl font-semibold">{{ category.name }}</h2><div class="grid gap-3 sm:grid-cols-2">
+{% for product in category.product_set.all %}<article class="panel flex flex-col p-5"><div class="flex items-start justify-between gap-3"><h3 class="font-semibold">{{ product.name }}</h3><span class="whitespace-nowrap text-sm font-semibold">R$ {{ product.price|floatformat:2 }}</span></div><p class="mb-5 mt-2 flex-1 text-sm muted">{{ product.description|default:'Sem descrição adicional.' }}</p>
+{% if product.is_active %}<form method="post" action="{% url 'cart_update' business.pk product.pk %}" hx-post="{% url 'cart_update' business.pk product.pk %}" hx-target="#cart-panel" hx-swap="outerHTML" hx-disabled-elt="find button">{% csrf_token %}<input type="hidden" name="action" value="add"><button type="submit" class="btn w-full">Adicionar ao carrinho</button></form>{% else %}<p class="badge self-start">Indisponível</p>{% endif %}</article>
+{% empty %}<p class="py-5 text-sm muted">Nenhum produto nesta categoria.</p>{% endfor %}</div></section>{% empty %}<div class="panel p-8"><h2 class="font-semibold">Cardápio em preparação</h2><p class="mt-2 text-sm muted">Os produtos estarão disponíveis aqui em breve.</p></div>{% endfor %}</div>
+<aside class="lg:sticky lg:top-5">{% include 'storefront/cart.html' %}</aside>
+</div>
+{% endblock %}

@@ -1,15 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Gerenciar produtos</title>
-</head>
-<body>
-
-    <h1>Gerenciar produtos</h1>
-
-    <p>Você tem permissão para gerenciar produtos.</p>
-
-    <a href="/">Voltar</a>
-
-</body>
-</html> 
+{% extends 'core/base.html' %}
+{% block title %}Gerenciar produtos · Lanchonete{% endblock %}
+{% block content %}<h1 class="text-3xl font-semibold tracking-tight">Gerenciar produtos</h1><p class="mt-2 text-sm muted">Consulte o cardápio ou cadastre um novo item.</p><div class="mt-7 flex gap-3"><a href="/produtos/" class="btn">Ver produtos</a><a href="/produtos/novo/" class="btn btn-primary">Novo produto</a></div>{% endblock %}

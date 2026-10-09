@@ -1,14 +1,3 @@
-<h1>Confirmar recebimento</h1>
-
-<p>Pedido #{{ order.id }}</p>
-
-{% if order.status == "SAIU_PARA_ENTREGA" %}
-    <p>Você recebeu este pedido?</p>
-
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit">Sim, recebi meu pedido</button>
-    </form>
-{% elif order.status == "ENTREGUE" %}
-    <p>Este pedido já foi marcado como entregue.</p>
-{% endif %}
+{% extends 'core/base.html' %}
+{% block title %}Confirmar recebimento · Lanchonete{% endblock %}
+{% block content %}<div class="panel mx-auto my-8 max-w-md p-7"><p class="mb-3 text-sm muted">Pedido #{{ order.id }}</p><h1 class="text-2xl font-semibold">Confirmar recebimento</h1>{% if order.status == 'SAIU_PARA_ENTREGA' %}<p class="my-5 text-sm muted">Seu pedido chegou? Confirme abaixo para avisar a lanchonete.</p><form method="post">{% csrf_token %}<button class="btn btn-primary w-full" type="submit">Sim, recebi meu pedido</button></form>{% elif order.status == 'ENTREGUE' %}<p class="mt-5 text-sm muted">Recebimento confirmado. Obrigado!</p>{% else %}<p class="mt-5 text-sm muted">Seu pedido ainda não saiu para entrega.</p>{% endif %}</div>{% endblock %}

@@ -1,60 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Produtos</title>
-</head>
-<body>
-
-    <h1>Produtos</h1>
-
-    <a href="/produtos/novo/">Novo produto</a>
-    <br><br>
-
-    <a href="/">Voltar</a>
-
-    <hr>
-
-    {% for product in products %}
-
-        <h2>{{ product.name }}</h2>
-
-        <p>Categoria: {{ product.category.name }}</p>
-        <p>Preço: R$ {{ product.price }}</p>
-
-        {% if product.description %}
-            <p>{{ product.description }}</p>
-        {% endif %}
-
-{% if product.is_active %}
-    <p>Ativo</p>
-
-    <form method="post" action="/produtos/{{ product.id }}/inativar/">
-        {% csrf_token %}
-        <button type="submit">Inativar</button>
-    </form>
-{% else %}
-    <p>Inativo</p>
-
-    <form method="post" action="/produtos/{{ product.id }}/ativar/">
-        {% csrf_token %}
-        <button type="submit">Ativar</button>
-    </form>
-{% endif %}
-
-<a href="/produtos/{{ product.id }}/editar/">Editar</a>
-
-<form method="post" action="/produtos/{{ product.id }}/inativar/">
-    {% csrf_token %}
-    <button type="submit">Inativar</button>
+{% extends 'core/base.html' %}
+{% block title %}Produtos · Lanchonete{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h1 class="text-3xl font-semibold tracking-tight">Produtos</h1><p class="mt-2 text-sm muted">Organize os itens do seu cardápio.</p></div><a class="btn btn-primary" href="/produtos/novo/">Novo produto</a></div>
+<form method="get" action="/produtos/" class="mb-5 flex flex-wrap items-end gap-3" hx-get="/produtos/" hx-target="#product-results" hx-select="#product-results" hx-swap="outerHTML">
+ <div class="w-full sm:max-w-sm"><label class="label" for="q">Buscar produto</label><input id="q" class="field" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Nome do produto" hx-get="/produtos/" hx-trigger="input changed delay:350ms, search" hx-include="closest form" hx-target="#product-results" hx-select="#product-results" hx-swap="outerHTML"></div>
+ <div><label class="label" for="status">Disponibilidade</label><select id="status" name="status" class="field" hx-get="/produtos/" hx-trigger="change" hx-include="closest form" hx-target="#product-results" hx-select="#product-results" hx-swap="outerHTML"><option value="">Todos</option><option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Ativos</option><option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inativos</option></select></div>
+ <button class="btn" type="submit">Buscar</button>
 </form>
-
-<hr>
-
-    {% empty %}
-
-        <p>Nenhum produto cadastrado.</p>
-
-    {% endfor %}
-
-</body>
-</html>
+<div id="product-results" aria-live="polite">
+ <div class="panel overflow-x-auto"><table class="w-full text-left text-sm"><caption class="border-b border-stone-200 px-5 py-3 text-left text-xs muted">{{ products|length }} produto{{ products|length|pluralize:'s' }}</caption><thead class="bg-stone-50 text-xs muted"><tr><th scope="col" class="px-5 py-3 font-medium">Produto</th><th scope="col" class="px-5 py-3 font-medium">Categoria</th><th scope="col" class="px-5 py-3 font-medium">Preço</th><th scope="col" class="px-5 py-3 font-medium">Status</th><th scope="col" class="px-5 py-3 font-medium text-right">Ações</th></tr></thead><tbody>
+ {% for product in products %}<tr class="border-t border-stone-200"><td class="min-w-48 px-5 py-4"><p class="font-semibold">{{ product.name }}</p>{% if product.description %}<p class="mt-1 max-w-sm text-xs muted">{{ product.description }}</p>{% endif %}</td><td class="px-5 py-4 muted">{{ product.category.name }}</td><td class="whitespace-nowrap px-5 py-4">R$ {{ product.price|floatformat:2 }}</td><td class="px-5 py-4"><span class="badge">{% if product.is_active %}Ativo{% else %}Inativo{% endif %}</span></td><td class="px-5 py-4"><div class="flex items-center justify-end gap-3"><a href="/produtos/{{ product.id }}/editar/" class="underline underline-offset-4">Editar</a><form method="post" action="/produtos/{{ product.id }}/{% if product.is_active %}inativar{% else %}ativar{% endif %}/" hx-post="/produtos/{{ product.id }}/{% if product.is_active %}inativar{% else %}ativar{% endif %}/?{{ request.GET.urlencode }}" hx-target="#product-results" hx-select="#product-results" hx-swap="outerHTML" hx-disabled-elt="find button">{% csrf_token %}<button class="btn" type="submit">{% if product.is_active %}Inativar{% else %}Ativar{% endif %}</button></form></div></td></tr>
+ {% empty %}<tr><td colspan="5" class="px-5 py-14 text-center"><p class="font-semibold">{% if request.GET.q or request.GET.status %}Nenhum produto encontrado{% else %}Seu cardápio ainda está vazio{% endif %}</p><p class="mt-2 muted">{% if request.GET.q or request.GET.status %}Tente outro nome ou altere o filtro.{% else %}Cadastre uma categoria em Cadastros e adicione seu primeiro produto.{% endif %}</p></td></tr>{% endfor %}
+ </tbody></table></div>
+</div>
+{% endblock %}

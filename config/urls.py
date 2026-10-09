@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from core import storefront
 from core.views import (
     home,
     accept_order,
@@ -30,8 +31,15 @@ from core.views import (
     product_deactivate,
     product_activate,
     confirm_delivery,
+    payment_update,
 )
 urlpatterns = [
+    path('pedido/<int:order_id>/pagamento/', payment_update, name='payment_update'),
+    path('cardapio/', storefront.menu, name='menu_default'),
+    path('cardapio/<int:business_id>/', storefront.menu, name='menu'),
+    path('cardapio/<int:business_id>/carrinho/<int:product_id>/', storefront.cart_update, name='cart_update'),
+    path('cardapio/<int:business_id>/finalizar/', storefront.checkout, name='checkout'),
+    path('pedido-recebido/<uuid:token>/', storefront.order_receipt, name='order_receipt'),
     path("admin/", admin.site.urls),
     path("", home),
     path("pedido/<int:order_id>/aceitar/", accept_order),

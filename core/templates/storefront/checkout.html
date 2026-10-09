@@ -1,0 +1,37 @@
+{% extends 'storefront/base.html' %}
+{% load static l10n %}
+{% block title %}Finalizar pedido{% endblock %}
+{% block content %}
+<a href="{% url 'menu' business.pk %}" class="text-sm muted underline underline-offset-4">Voltar ao cardápio</a><h1 class="mb-7 mt-5 text-3xl font-semibold tracking-tight">Finalizar pedido</h1>
+{% if not cart_items %}<div class="panel p-6"><p>Seu carrinho está vazio.</p><a href="{% url 'menu' business.pk %}" class="btn mt-4">Escolher produtos</a></div>{% else %}
+<div class="grid items-start gap-7 lg:grid-cols-[1fr_340px]">
+<form method="post" class="panel space-y-6 p-5 sm:p-7" data-checkout-form data-business-id="{{ business.pk }}" data-is-bound="{{ form.is_bound|yesno:'true,false' }}">{% csrf_token %}<input type="hidden" name="token" value="{{ checkout_token }}">
+{% if form.errors %}<div role="alert" class="rounded border border-stone-300 bg-stone-50 p-4 text-sm"><p class="mb-2 font-semibold">Confira as informações do pedido.</p>{{ form.non_field_errors }}{% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}</div>{% endif %}
+<section><h2 class="mb-4 text-lg font-semibold">Seus dados</h2><div class="grid gap-4 sm:grid-cols-2"><div><label class="label" for="checkout-name">Nome</label>{{ form.name }}</div><div><label class="label" for="checkout-phone">Telefone / WhatsApp</label>{{ form.phone }}<p class="mt-2 text-xs muted">Telefone com DDD. Exemplo: (11) 99999-9999.</p></div></div>
+<div class="mt-4 space-y-2 text-sm">
+  <label class="flex items-start gap-2" for="remember-checkout"><input type="checkbox" id="remember-checkout" name="remember_details" value="1" aria-describedby="remember-checkout-help" class="mt-1"{% if form.is_bound and request.POST.remember_details %} checked{% endif %}><span>Lembrar meus dados neste dispositivo</span></label>
+  <p id="remember-checkout-help" class="text-xs muted">Salva nome, telefone e endereço neste navegador por até 90 dias. Use somente em um dispositivo seu. Você pode apagar quando quiser.</p>
+  <button type="button" id="forget-checkout" class="hidden text-xs underline underline-offset-4">Apagar dados salvos</button>
+  <p id="remember-checkout-status" class="text-xs muted" role="status" aria-live="polite"></p>
+</div>
+<noscript><p class="mt-3 text-xs muted">Ative o JavaScript para lembrar seus dados neste dispositivo.</p></noscript>
+</section>
+<section class="border-t border-stone-200 pt-5"><h2 class="mb-4 text-lg font-semibold">Recebimento</h2><label class="label" for="checkout-order_type">Como deseja receber?</label>{{ form.order_type }}<p class="mt-2 text-xs muted">Na retirada, busque seu pedido na lanchonete.</p>
+<fieldset id="delivery-address" class="mt-5 grid gap-4 sm:grid-cols-2"><legend class="mb-3 text-sm font-semibold">Endereço de entrega</legend>
+<div class="sm:col-span-2"><label class="label" for="checkout-street">Rua</label>{{ form.street }}</div><div><label class="label" for="checkout-number">Número</label>{{ form.number }}</div><div><label class="label" for="checkout-neighborhood">Bairro</label>{{ form.neighborhood }}</div><div><label class="label" for="checkout-city">Cidade</label>{{ form.city }}</div><div><label class="label" for="checkout-state">UF</label>{{ form.state }}</div><div><label class="label" for="checkout-zip_code">CEP</label>{{ form.zip_code }}</div><div><label class="label" for="checkout-complement">Complemento (opcional)</label>{{ form.complement }}</div><div class="sm:col-span-2"><label class="label" for="checkout-reference">Referência (opcional)</label>{{ form.reference }}</div>
+</fieldset></section>
+<section class="border-t border-stone-200 pt-5"><h2 class="mb-4 text-lg font-semibold">Pagamento</h2><label class="label" for="checkout-payment_method">Forma de pagamento</label>{{ form.payment_method }}
+<p id="checkout-payment-help" class="mt-2 text-xs muted">{% if business.pix_key %}Pix após enviar o pedido, com a chave da loja e confirmação da equipe. {% endif %}Cartão na maquininha; dinheiro na entrega ou retirada.</p>
+<fieldset id="cash-change-field" class="mt-4"><label class="label" for="checkout-cash_change_for">Troco para (opcional)</label>{{ form.cash_change_for }}<p class="mt-2 text-xs muted">Informe o valor da nota. Deixe em branco se não precisar de troco.</p></fieldset>
+<p class="mt-3 text-xs muted">O pedido começa com pagamento pendente. Nenhum dado de cartão é solicitado ou salvo.</p></section>
+<div><label class="label" for="checkout-observation">Observações do pedido (opcional)</label>{{ form.observation }}</div>
+{% if cart_valid %}<button type="submit" class="btn btn-primary w-full">Enviar pedido · <span id="checkout-submit-total">R$ {{ order_total|floatformat:2 }}</span></button>{% else %}<p role="alert" class="text-sm">Há produtos indisponíveis. Volte ao cardápio para revisar o carrinho.</p>{% endif %}
+</form>
+<aside class="panel p-5"><h2 class="mb-5 text-lg font-semibold">Resumo do pedido</h2>{% for item in cart_items %}<div class="mb-4 text-sm"><div class="flex justify-between gap-3"><span>{{ item.quantity }} × {{ item.product.name }}</span><span class="whitespace-nowrap">R$ {{ item.subtotal|floatformat:2 }}</span></div>{% if item.observation %}<p class="mt-1 text-xs muted">{{ item.observation }}</p>{% endif %}</div>{% endfor %}
+<div class="flex justify-between border-t border-stone-200 pt-4 text-sm"><span>Produtos</span><span>R$ {{ cart_total|floatformat:2 }}</span></div>
+<div id="delivery-fee-line" class="mt-2 flex justify-between text-sm" {% if form.order_type.value != 'DELIVERY' %}hidden{% endif %}><span>Taxa de entrega</span><span>R$ {{ delivery_fee|floatformat:2 }}</span></div>
+<div class="mt-4 flex justify-between border-t border-stone-200 pt-4 text-sm"><span>Total do pedido</span><strong id="checkout-total" data-subtotal="{{ cart_total|unlocalize }}" data-delivery-fee="{{ delivery_fee|unlocalize }}">R$ {{ order_total|floatformat:2 }}</strong></div>
+</aside>
+</div>{% endif %}
+<script src="{% static 'core/js/checkout.js' %}" defer></script>
+{% endblock %}

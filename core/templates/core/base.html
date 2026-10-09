@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>{% block title %}Lanchonete{% endblock %}</title>
+ <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+ <script src="{% static 'core/js/htmx.min.js' %}" defer></script>
+</head>
+<body>
+ <a href="#content" class="sr-only focus:not-sr-only">Ir para o conteúdo</a>
+ <header class="border-b border-stone-300 bg-white">
+  <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
+   <a href="/" class="text-lg font-semibold tracking-tight">Lanchonete<span class="ml-2 text-xs font-normal muted">gestão</span></a>
+   {% if user.is_authenticated %}
+   <nav aria-label="Navegação principal" class="flex items-center gap-1">
+    <a href="/cardapio/" class="nav-link">Cardápio</a>
+    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" {% if request.path == '/' %}aria-current="page"{% endif %}>Pedidos</a>
+    <a href="/produtos/" class="nav-link {% if '/produtos/' in request.path %}active{% endif %}">Produtos</a>
+    {% if user.is_staff %}<a href="/admin/" class="nav-link">Cadastros</a>{% endif %}
+   </nav>
+   <div class="flex items-center gap-4 text-sm"><span class="muted">{{ user.get_short_name|default:user.username }}</span><form method="post" action="/accounts/logout/">{% csrf_token %}<button class="underline underline-offset-4" type="submit">Sair</button></form></div>
+   {% endif %}
+  </div>
+ </header>
+ <main id="content" class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">{% block content %}{% endblock %}</main>
+ <footer class="mx-auto max-w-7xl px-5 pb-6 text-xs muted sm:px-8">Lanchonete · Organização do dia a dia</footer>
+ <div id="request-error" role="alert" class="hidden fixed bottom-5 left-5 right-5 mx-auto max-w-lg rounded border border-stone-300 bg-white p-4 text-sm">Não foi possível atualizar. Verifique a conexão e tente novamente.</div>
+ <script>
+ document.addEventListener('htmx:responseError', () => document.getElementById('request-error').classList.remove('hidden'));
+ document.addEventListener('htmx:sendError', () => document.getElementById('request-error').classList.remove('hidden'));
+ document.addEventListener('htmx:beforeSwap', event => { if (event.detail.xhr.responseURL.includes('/accounts/login/')) { event.detail.shouldSwap = false; window.location.href = '/accounts/login/?next=' + encodeURIComponent(window.location.pathname); } });
+ document.addEventListener('htmx:beforeRequest', () => document.getElementById('request-error').classList.add('hidden'));
+ </script>
+</body></html>

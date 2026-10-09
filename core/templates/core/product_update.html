@@ -1,34 +1,3 @@
-<h1>Editar produto</h1>
-
-<form method="post">
-    {% csrf_token %}
-
-    <label>Nome:</label>
-    <input type="text" name="name" value="{{ product.name }}">
-
-    <br><br>
-
-    <label>Descrição:</label>
-    <textarea name="description">{{ product.description }}</textarea>
-
-    <br><br>
-
-    <label>Preço:</label>
-    <input type="text" name="price" value="{{ product.price|stringformat:'s' }}">
-
-    <br><br>
-
-    <label>Categoria:</label>
-    <select name="category">
-        {% for category in categories %}
-            <option value="{{ category.id }}"
-                {% if category.id == product.category_id %}selected{% endif %}>
-                {{ category.name }}
-            </option>
-        {% endfor %}
-    </select>
-
-    <br><br>
-
-    <button type="submit">Salvar alterações</button>
-</form>
+{% extends 'core/base.html' %}
+{% block title %}Editar produto · Lanchonete{% endblock %}
+{% block content %}{% include 'core/partials/product_form.html' with heading='Editar produto' %}{% endblock %}

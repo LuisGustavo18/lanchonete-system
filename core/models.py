@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 
 
 
@@ -8,6 +9,9 @@ class Business(models.Model):
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
+    pix_key = models.CharField('Chave Pix', max_length=140, blank=True)
+    pix_recipient = models.CharField('Nome do recebedor Pix', max_length=150, blank=True)
+    delivery_fee = models.DecimalField('Taxa fixa de entrega', max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -83,6 +87,7 @@ class Customer(models.Model):
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20)
+    normalized_phone = models.CharField(max_length=20, blank=True, db_index=True, editable=False)
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -94,6 +99,13 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        from .customer_data import normalize_phone
+        self.normalized_phone = normalize_phone(self.phone)
+        if kwargs.get('update_fields') is not None and 'phone' in kwargs['update_fields']:
+            kwargs['update_fields'] = set(kwargs['update_fields']) | {'normalized_phone'}
+        super().save(*args, **kwargs)
 
 
 class Address(models.Model):
@@ -152,8 +164,21 @@ class Order(models.Model):
         CREDIT_CARD = "CARTAO_CREDITO", "Cartão de crédito"
         DEBIT_CARD = "CARTAO_DEBITO", "Cartão de débito"
 
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'PENDENTE', 'Pagamento pendente'
+        PAID = 'PAGO', 'Pagamento recebido'
+
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
+    checkout_token = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    customer_name = models.CharField(max_length=150, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+    address_snapshot = models.JSONField(default=dict, blank=True)
+    payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    cash_change_for = models.DecimalField('Troco para', max_digits=10, decimal_places=2, null=True, blank=True)
+    delivery_fee = models.DecimalField('Taxa de entrega do pedido', max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
 
     status = models.CharField(
         max_length=30,
@@ -189,16 +214,40 @@ class Order(models.Model):
     def __str__(self):
         return f"Pedido #{self.id} - {self.customer.name}"
 
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.customer_id:
+            self.customer_name = self.customer_name or self.customer.name
+            self.customer_phone = self.customer_phone or self.customer.phone
+            if self.address_id and not self.address_snapshot:
+                self.address_snapshot = {key: getattr(self.address, key) for key in (
+                    'street', 'number', 'neighborhood', 'city', 'state', 'zip_code', 'complement', 'reference'
+                )}
+        super().save(*args, **kwargs)
+
     def calculate_total(self):
         total = sum(
             item.get_subtotal()
             for item in self.orderitem_set.all()
         )
 
-        self.total_amount = total
+        self.total_amount = total + self.delivery_fee
         self.save(update_fields=["total_amount"])
 
-        return total
+        return self.total_amount
+
+
+class PaymentEvent(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_events')
+    status = models.CharField(max_length=20, choices=Order.PaymentStatus.choices)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    note = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'pk']
+        verbose_name = 'Registro de pagamento'
+        verbose_name_plural = 'Registros de pagamento'
 
 
 class OrderItem(models.Model):
@@ -255,5 +304,3 @@ class OrderStatusHistory(models.Model):
     null=True,
     blank=True
 )
-
-    

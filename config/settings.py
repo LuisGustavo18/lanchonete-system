@@ -10,17 +10,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env", override=False, interpolate=False)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%8@uk9fxwv74yo@+pariwnlace+a@v7m&dy$4t7b!1#c2vw=g0'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-apenas-desenvolvimento-local")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -82,7 +85,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'lanchonete_db',
         'USER': 'postgres',
-        'PASSWORD': 'Postgres@2026!',
+        'PASSWORD': os.environ.get("POSTGRES_PASSWORD", ""),
         'HOST': 'localhost',
         'PORT': '5432',
     }

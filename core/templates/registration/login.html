@@ -1,24 +1,10 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>Login - Lanchonete System</title>
-</head>
-
-<body>
-
-    <h1>Login</h1>
-
-    <form method="post">
-
-        {% csrf_token %}
-
-        {{ form.as_p }}
-
-        <button type="submit">Entrar</button>
-
-    </form>
-
-</body>
-
-</html>
+{% extends 'core/base.html' %}
+{% block title %}Entrar · Lanchonete{% endblock %}
+{% block content %}
+<div class="mx-auto my-8 max-w-sm sm:my-16"><h1 class="text-3xl font-semibold tracking-tight">Entrar</h1><p class="mb-7 mt-2 text-sm muted">Acesse o painel da sua lanchonete.</p>
+<form method="post" class="panel space-y-5 p-6">{% csrf_token %}
+{% if form.errors %}<p role="alert" class="rounded border border-stone-300 bg-stone-50 p-3 text-sm">Usuário ou senha incorretos. Tente novamente.</p>{% endif %}
+<div><label class="label" for="id_username">Usuário</label><input id="id_username" class="field" name="username" value="{{ form.username.value|default:'' }}" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="150" required autofocus></div>
+<div><label class="label" for="id_password">Senha</label><input id="id_password" class="field" type="password" name="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" required><button type="button" class="mt-2 text-sm underline underline-offset-4" aria-controls="id_password" aria-pressed="false" onclick="const input = document.getElementById('id_password'); const show = input.type === 'password'; input.type = show ? 'text' : 'password'; this.textContent = show ? 'Ocultar senha' : 'Mostrar senha'; this.setAttribute('aria-pressed', String(show));">Mostrar senha</button></div>
+<input type="hidden" name="next" value="{{ next }}"><button type="submit" class="btn btn-primary w-full">Entrar</button>
+</form></div>{% endblock %}
