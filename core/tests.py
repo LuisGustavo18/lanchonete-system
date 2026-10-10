@@ -1,10 +1,11 @@
-from django.test import TestCase
+﻿from django.test import TestCase
 from django.contrib.auth.models import User
 from datetime import timedelta
 from django.utils import timezone
 from .tasks import auto_complete_deliveries
 
-from .models import Business, Customer, Membership, Order, Product, Category
+from .models import Business, Customer, Membership, Order, Product, Category, Table, Comanda
+
 
 class TestePedido(TestCase):
 
@@ -65,7 +66,7 @@ class TestePedido(TestCase):
 
             self.assertEqual(
                 order.status,
-                Order.Status.OUT_FOR_DELIVERY    
+                Order.Status.OUT_FOR_DELIVERY
             )
 
         def test_usuario_da_mesma_empresa_pode_aceitar_pedido(self):
@@ -684,7 +685,7 @@ class TestePedido(TestCase):
 
             self.assertEqual(
                 historico.count(),
-                1  
+                1
             )
 
         def test_entrega_nao_e_concluida_antes_de_2_horas(self):
@@ -752,7 +753,7 @@ class TestePedido(TestCase):
         def test_owner_pode_acessar_criacao_de_produto(self):
             user = User.objects.create_user(
             username="owner",
-            password="123456"   
+            password="123456"
             )
 
             business = Business.objects.create(
@@ -771,7 +772,7 @@ class TestePedido(TestCase):
             self.client.login(
             username="owner",
             password="123456"
-            )    
+            )
 
             response = self.client.get("/produtos/novo/")
 
@@ -797,7 +798,7 @@ class TestePedido(TestCase):
                 business=business,
                 role="MANAGER",
                 is_active=True
-            )    
+            )
 
             self.client.login(
                 username="manager",
@@ -858,3 +859,55 @@ class TestePedido(TestCase):
 
 
             self.assertEqual(response.status_code, 404)
+class TesteSegurancaComandas(TestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user(
+            username="dono_a",
+            password="teste123"
+        )
+        self.business_a = Business.objects.create(
+            name="Lanchonete A",
+            phone="15999999999"
+        )
+        Membership.objects.create(
+            user=self.user_a,
+            business=self.business_a,
+            role=Membership.Role.OWNER,
+            is_active=True
+        )
+
+        self.business_b = Business.objects.create(
+            name="Lanchonete B",
+            phone="15988888888"
+        )
+        self.table_b = Table.objects.create(
+            business=self.business_b,
+            number="1"
+        )
+        self.comanda_b = Comanda.objects.create(
+            business=self.business_b,
+            table=self.table_b
+        )
+
+    def test_usuario_nao_acessa_comanda_de_outra_empresa(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.get(
+            f"/comandas/{self.comanda_b.id}/"
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_usuario_nao_fecha_comanda_de_outra_empresa(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            f"/comandas/{self.comanda_b.id}/fechar/"
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.comanda_b.refresh_from_db()
+        self.assertEqual(
+            self.comanda_b.status,
+            Comanda.Status.OPEN
+        )

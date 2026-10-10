@@ -43,6 +43,8 @@ from core.views import (
     pedido_item_update,
     pedido_payment_update,
     comanda_close,
+    public_menu,
+    comanda_cancel,
 )
 
 
@@ -151,6 +153,18 @@ path(
     "comandas/<int:comanda_id>/fechar/",
     comanda_close,
     name="comanda_close",
+),
+
+path(
+    "cardapio/<int:business_id>/",
+    public_menu,
+    name="public_menu",
+),
+
+path(
+    "comandas/<int:comanda_id>/cancelar/",
+    comanda_cancel,
+    name="comanda_cancel"
 ),
 
 ]

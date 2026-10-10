@@ -168,11 +168,21 @@
     </section>
 
     ```html
+```html
 {% if comanda.status == "ABERTA" %}
     <form method="post" action="{% url 'comanda_close' comanda.id %}">
         {% csrf_token %}
         <button type="submit">Fechar comanda</button>
     </form>
+
+    {% if not tem_itens %}
+        <form method="post"
+              action="{% url 'comanda_cancel' comanda.id %}"
+              onsubmit="return confirm('Tem certeza que deseja cancelar esta comanda?');">
+            {% csrf_token %}
+            <button type="submit">Cancelar comanda</button>
+        </form>
+    {% endif %}
 {% endif %}
 ```
 

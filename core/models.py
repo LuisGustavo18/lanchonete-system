@@ -8,8 +8,17 @@ class Business(models.Model):
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
+    pix_key = models.CharField("Chave Pix", max_length=140, blank=True)
+    pix_recipient = models.CharField("Nome do recebedor Pix", max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
     service_charge_enabled = models.BooleanField(default=False)
+
+    delivery_fee = models.DecimalField(
+    "Taxa de entrega",
+    max_digits=10,
+    decimal_places=2,
+    default=0
+)
 
     service_charge_percent = models.DecimalField(
     max_digits=5,
@@ -114,6 +123,7 @@ class Comanda(models.Model):
     class Status(models.TextChoices):
         OPEN = "ABERTA", "Aberta"
         CLOSED = "FECHADA", "Fechada"
+        CANCELLED = "CANCELADA", "Cancelada"
 
     business = models.ForeignKey(
         Business,
@@ -232,6 +242,33 @@ class Order(models.Model):
         on_delete=models.CASCADE
     )
 
+    address = models.ForeignKey(
+    Address,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    )
+
+    checkout_token = models.UUIDField(
+    null=True,
+    blank=True,
+    unique=True,
+    editable=False,
+    )
+
+    customer_name = models.CharField(max_length=150, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+
+    address_snapshot = models.JSONField(default=dict, blank=True)
+
+    cash_change_for = models.DecimalField(
+    "Troco para",
+    max_digits=10,
+    decimal_places=2,
+    null=True,
+    blank=True,
+    )
+
     comanda = models.ForeignKey(
         Comanda,
         on_delete=models.PROTECT,
@@ -251,10 +288,21 @@ class Order(models.Model):
         choices=OrderType.choices,
     )
 
+    class PaymentStatus(models.TextChoices):
+        PENDING = "PENDENTE", "Pagamento pendente"
+        PAID = "PAGO", "Pagamento recebido"
+
     payment_method = models.CharField(
-        max_length=20,
-        choices=PaymentMethod.choices,
+    max_length=20,
+    choices=PaymentMethod.choices,
     )
+
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING,
+    )
+
 
     total_amount = models.DecimalField(
         max_digits=10,
@@ -272,6 +320,13 @@ class Order(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
+    )
+
+    delivery_fee = models.DecimalField(
+    "Taxa de entrega",
+    max_digits=10,
+    decimal_places=2,
+    default=0,
     )
 
     observation = models.TextField(blank=True)
@@ -296,8 +351,15 @@ class Order(models.Model):
             subtotal * self.service_charge_percent
         ) / 100
 
+        delivery_fee = 0
+
+        if self.order_type == self.OrderType.DELIVERY:
+            delivery_fee = self.delivery_fee
+
         self.service_charge_amount = service_charge
-        self.total_amount = subtotal + service_charge
+        self.total_amount = (
+            subtotal + service_charge + delivery_fee
+        )
 
         self.save(
             update_fields=[

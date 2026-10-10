@@ -4,6 +4,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from datetime import timedelta
 from core.permissions import has_permission
+from django.views.decorators.http import require_POST
 from .models import (
     Order,
     OrderItem,
@@ -13,6 +14,8 @@ from .models import (
     Customer,
     Table,
     Comanda,
+    Business,
+    Category,
 )
 
 
@@ -32,6 +35,35 @@ def manage_products(request):
         return redirect("/")
 
     return render(request, "core/manage_products.html")
+
+
+def public_menu(request, business_id):
+    business = get_object_or_404(
+        Business,
+        id=business_id,
+        is_active=True,
+    )
+
+    categories = Category.objects.filter(
+        business=business,
+        is_active=True,
+    )
+
+    products = Product.objects.filter(
+        business=business,
+        category__in=categories,
+        is_active=True,
+    ).select_related("category")
+
+    return render(
+        request,
+        "core/public_menu.html",
+        {
+            "business": business,
+            "categories": categories,
+            "products": products,
+        },
+    )
 
 @login_required
 def table_list(request):
@@ -503,7 +535,9 @@ def pedido_payment_update(request, comanda_id, pedido_id):
 
 
 
+
 @login_required
+@require_POST
 def comanda_close(request, comanda_id):
     membership = get_object_or_404(
         Membership,
@@ -521,31 +555,76 @@ def comanda_close(request, comanda_id):
         status=Comanda.Status.OPEN
     )
 
-    if request.method == "POST":
-        pedidos = comanda.orders.all()
+    pedidos = list(comanda.orders.all())
 
-        for pedido in pedidos:
-            if pedido.payment_method == Order.PaymentMethod.PENDING:
-                return redirect(
-                    "comanda_detail",
-                    comanda_id=comanda.id
-                )
-
-        comanda.status = Comanda.Status.CLOSED
-        comanda.closed_at = timezone.now()
-        comanda.save(
-            update_fields=[
-                "status",
-                "closed_at",
-            ]
+    # Não fechar uma comanda vazia.
+    if not pedidos:
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
         )
 
-        return redirect("comanda_list")
+    # Verificar somente os pedidos desta comanda.
+    if any(
+        pedido.payment_method == Order.PaymentMethod.PENDING
+        for pedido in pedidos
+    ):
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
 
-    return redirect(
-        "comanda_detail",
-        comanda_id=comanda.id
+    # O funcionário confirma manualmente o recebimento.
+    for pedido in pedidos:
+        pedido.payment_status = Order.PaymentStatus.PAID
+        pedido.save(update_fields=["payment_status"])
+
+    # Fechar somente esta comanda.
+    comanda.status = Comanda.Status.CLOSED
+    comanda.closed_at = timezone.now()
+    comanda.save(update_fields=["status", "closed_at"])
+
+    return redirect("comanda_list")
+
+
+@login_required
+@require_POST
+def comanda_cancel(request, comanda_id):
+    membership = get_object_or_404(
+        Membership,
+        user=request.user,
+        is_active=True
     )
+
+    if not has_permission(membership, "manage_comandas"):
+        return redirect("/")
+
+    comanda = get_object_or_404(
+        Comanda,
+        id=comanda_id,
+        business=membership.business,
+        status=Comanda.Status.OPEN
+    )
+
+    # Bloqueia o cancelamento se algum pedido tiver produtos.
+    tem_itens = OrderItem.objects.filter(
+        order__comanda=comanda
+    ).exists()
+
+    if tem_itens:
+        return redirect(
+            "comanda_detail",
+            comanda_id=comanda.id
+        )
+
+    # Remove somente os pedidos vazios desta comanda.
+    comanda.orders.all().delete()
+
+    comanda.status = Comanda.Status.CANCELLED
+    comanda.closed_at = timezone.now()
+    comanda.save(update_fields=["status", "closed_at"])
+
+    return redirect("comanda_list")
 
 @login_required
 def product_list(request):

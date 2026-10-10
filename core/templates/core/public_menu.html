@@ -1,0 +1,40 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio - {{ business.name }}</title>
+</head>
+<body>
+    <header>
+        <h1>{{ business.name }}</h1>
+        <h2>Nosso cardápio</h2>
+    </header>
+
+    {% for category in categories %}
+        <section>
+            <h3>{{ category.name }}</h3>
+
+            {% for product in products %}
+                {% if product.category_id == category.id %}
+                    <article>
+                        <h4>{{ product.name }}</h4>
+
+                        {% if product.description %}
+                            <p>{{ product.description }}</p>
+                        {% endif %}
+
+                        <p>
+                            R$ {{ product.price|floatformat:2 }}
+                        </p>
+                    </article>
+                {% endif %}
+            {% endfor %}
+        </section>
+    {% empty %}
+        <p>Nosso cardápio está sendo preparado.</p>
+    {% endfor %}
+</body>
+</html>
+```
